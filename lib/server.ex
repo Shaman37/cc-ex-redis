@@ -13,6 +13,9 @@ defmodule Server do
   # Listen for incoming connections
   defp listen() do
     {:ok, socket} = :gen_tcp.listen(@port, [:binary, active: false, reuseaddr: true])
-    {:ok, _client} = :gen_tcp.accept(socket)
+    {:ok, client} = :gen_tcp.accept(socket)
+
+    :gen_tcp.send(client, "+PONG\r\n")
+    :gen_tcp.close(client)
   end
 end

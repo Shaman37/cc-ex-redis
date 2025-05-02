@@ -14,6 +14,7 @@ defmodule Server do
   """
   def start(_type, _args) do
     children = [
+      Store,
       {Task.Supervisor, name: @task_supervisor},
       {Task, fn -> listen() end}
     ]

@@ -28,7 +28,6 @@ defmodule Server do
     accept_loop(socket)
   end
 
-
   # Accepts new client connections and starts a supervised task for each one.
   defp accept_loop(socket) do
     {:ok, client_socket} = :gen_tcp.accept(socket)
@@ -40,12 +39,17 @@ defmodule Server do
     accept_loop(socket)
   end
 
-
   # Handles communication with a single client.
   defp handle_client(socket) do
     case :gen_tcp.recv(socket, 0) do
-      {:ok, _data} ->
-        :gen_tcp.send(socket, "+PONG\r\n")
+      {:ok, data} ->
+        response =
+        case RESPCommand.parse(data) do
+          %RESPCommand{} = cmd -> RESPCommand.execute(cmd)
+          nil -> "(error) invalid command format\r\n"
+        end
+
+        :gen_tcp.send(socket, response)
         handle_client(socket)
 
       {:error, :closed} ->

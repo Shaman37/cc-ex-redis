@@ -17,15 +17,28 @@ defmodule Store do
   @doc """
   Stores a key-value pair in the store.
   """
-  def set(key, value) do
-    Agent.update(__MODULE__, fn store -> Map.put(store, key, value) end)
+  def set(key, value, expiry \\ :infinity) do
+    expires_at =
+      if expiry == :infinity, do: :infinity, else: System.monotonic_time(:millisecond) + expiry
+
+    Agent.update(__MODULE__, fn store -> Map.put(store, key, {value, expires_at}) end)
   end
 
-   @doc """
+  @doc """
   Retrieves a value for the given key.
   Returns nil if the key is not found.
   """
   def get(key) do
-    Agent.get(__MODULE__, fn store -> Map.get(store, key) end)
+    case Agent.get(__MODULE__, fn store -> Map.get(store, key) end) do
+      nil ->
+        nil
+
+      {value, :infinity} ->
+        value
+
+      {value, expires_at} ->
+        now = System.monotonic_time(:millisecond)
+        if now > expires_at, do: nil, else: value
+    end
   end
 end

@@ -13,12 +13,12 @@ defmodule RESPCommand.Set do
         "+OK\r\n"
 
       {"PX", _} ->
-        "(error) expiry value must be a valid integer\r\n"
+        "- error | expiry value must be a valid integer\r\n"
 
       {invalid, _} ->
-        "(error) third argument must be PX, got: #{invalid}\r\n"
+        "- error | third argument must be PX, got: #{invalid}\r\n"
     end
   end
 
-  def execute(_), do: "(error) wrong number of arguments for 'SET' command\r\n"
+  def execute(_), do: "- error | wrong number of arguments for 'SET' command\r\n"
 end

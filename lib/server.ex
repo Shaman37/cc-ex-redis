@@ -13,7 +13,13 @@ defmodule Server do
   Starts the Redis server and a Task.Supervisor for handling client connections.
   """
   def start(_type, _args) do
+    {opts, _args, _invalid} = OptionParser.parse(System.argv(), switches: [dir: :string, dbfilename: :string])
+
+    dir = Keyword.get(opts, :dir, "/tmp/redis-data")
+    dbfilename = Keyword.get(opts, :dbfilename, "dump.rdb")
+
     children = [
+      {RDBConfig, %{dir: dir, dbfilename: dbfilename}},
       Store,
       {Task.Supervisor, name: @task_supervisor},
       {Task, fn -> listen() end}
@@ -47,7 +53,7 @@ defmodule Server do
         response =
         case RESPCommand.parse(data) do
           %RESPCommand{} = cmd -> RESPCommand.execute(cmd)
-          nil -> "(error) invalid command format\r\n"
+          nil -> "- error | invalid command format\r\n"
         end
 
         :gen_tcp.send(socket, response)

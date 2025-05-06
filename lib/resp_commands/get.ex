@@ -8,5 +8,5 @@ defmodule RESPCommand.Get do
     end
   end
 
-  def execute(_), do: "(error) wrong number of arguments for 'GET' command\r\n"
+  def execute(_), do: "- error | wrong number of arguments for 'GET' command\r\n"
 end

@@ -1,4 +1,4 @@
-defmodule Store do
+defmodule RDBStore do
   @moduledoc """
   An in-memory key-value store backed by an Agent.
   Used to persist values across client connections.
@@ -6,6 +6,13 @@ defmodule Store do
 
   use Agent
 
+  @enforce_keys [:dir, :dbfilename]
+  defstruct [:dir, :dbfilename]
+
+  @type t :: %__MODULE__{
+          dir: String.t(),
+          dbfilename: String.t()
+        }
   @doc """
   Starts the Store agent with an empty map.
   Should be added to the supervision tree.
@@ -15,13 +22,15 @@ defmodule Store do
   end
 
   @doc """
-  Stores a key-value pair in the store.
+  Stores a key-value pair in the RDBStore.
   """
   def set(key, value, expiry \\ :infinity) do
     expires_at =
-      if expiry == :infinity, do: :infinity, else: System.monotonic_time(:millisecond) + expiry
+      if expiry == :infinity, do: :infinity, else: System.system_time(:millisecond) + expiry
 
-    Agent.update(__MODULE__, fn store -> Map.put(store, key, {value, expires_at}) end)
+    Agent.update(__MODULE__, fn store ->
+      Map.put(store, key, {value, expires_at, :millisecond})
+    end)
   end
 
   @doc """
@@ -33,25 +42,18 @@ defmodule Store do
       nil ->
         nil
 
-      {value, :infinity} ->
+      {value, :infinity, _type} ->
         value
 
-      {value, expires_at} ->
-        now = System.monotonic_time(:millisecond)
-        if now > expires_at, do: nil, else: value
+      {value, expiry, type} ->
+        now_ms = System.system_time(type)
+        if now_ms > expiry, do: nil, else: value
     end
   end
 
   def restore(data) do
-    Enum.each(data, fn {key, %{value: value, expiry: exp, expiry_type: type}} ->
-      expiry =
-        case exp do
-          :infinity -> :infinity
-          ts when type == :s -> ts * 1000
-          ts when type == :ms -> ts
-        end
-
-      Agent.update(__MODULE__, fn store -> Map.put(store, key, {value, expiry}) end)
+    Enum.each(data, fn {key, %{value: value, expiry: expiry, expiry_type: expiry_type}} ->
+      Agent.update(__MODULE__, fn store -> Map.put(store, key, {value, expiry, expiry_type}) end)
     end)
   end
 

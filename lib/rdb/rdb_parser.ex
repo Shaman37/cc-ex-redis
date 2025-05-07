@@ -66,7 +66,7 @@ defmodule RDBParser do
   # ---- DATABASE SECTION | Expire in seconds ----
   # Stores a temporary expiry in seconds (0xFD)
   defp parse(<<0xFD, expiry::little-unsigned-integer-size(32), data::binary>>, acc) do
-    acc = set_data_entry_expiry(acc, expiry, :s)
+    acc = set_data_entry_expiry(acc, expiry, :second)
 
     parse(data, acc)
   end
@@ -74,7 +74,7 @@ defmodule RDBParser do
   # ---- DATABASE SECTION | Expire in milliseconds ----
   # Stores a temporary expiry in milliseconds (0xFC)
   defp parse(<<0xFC, expiry::little-unsigned-integer-size(64), data::binary>>, acc) do
-    acc = set_data_entry_expiry(acc, expiry, :ms)
+    acc = set_data_entry_expiry(acc, expiry, :millisecond)
 
     parse(data, acc)
   end
@@ -170,8 +170,8 @@ defmodule RDBParser do
 
   # Adds a key-value pair to the data map, applying expiry if present
   defp add_data_entry(acc, key, value) do
+    expiry_type = Map.get(acc, :_expiry_type, :millisecond)
     expiry = Map.get(acc, :_expiry, :infinity)
-    expiry_type = Map.get(acc, :_expiry_type, :ms)
 
     entry = %{value: value, expiry: expiry, expiry_type: expiry_type}
 

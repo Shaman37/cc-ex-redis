@@ -20,8 +20,8 @@ defmodule Server do
     dbfilename = Keyword.get(opts, :dbfilename, "dump.rdb")
 
     children = [
-      Store,
-      {RDB, RDB.new_config(dir, dbfilename)},
+      RDBStore,
+      {RDB, RDBConfig.new(dir, dbfilename)},
       {Task.Supervisor, name: @task_supervisor},
       {Task,
        fn ->

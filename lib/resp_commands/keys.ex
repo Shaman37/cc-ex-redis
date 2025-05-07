@@ -2,7 +2,7 @@ defmodule RESPCommand.Keys do
   @moduledoc "Handles the KEYS command."
 
   def execute(["*"]) do
-    Store.keys()
+    RDBStore.keys()
     |> encode_array()
   end
 

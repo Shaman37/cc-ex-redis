@@ -34,7 +34,14 @@ defmodule Server do
        end}
     ]
 
-    Supervisor.start_link(children, strategy: :one_for_one)
+    {:ok, pid} = Supervisor.start_link(children, strategy: :one_for_one)
+
+    if role == "slave" do
+      [host, port] = Keyword.get(opts, :replicaof, "") |> String.split()
+      Task.start(fn -> connect_to_master(host, String.to_integer(port)) end)
+    end
+
+    {:ok, pid}
   end
 
   # Opens a TCP socket on the configured port and accepts incoming clients.
@@ -70,6 +77,19 @@ defmodule Server do
 
       {:error, :closed} ->
         :ok
+    end
+  end
+
+  defp connect_to_master(host, port) do
+    # Convert host/port to charlist for :gen_tcp.connect
+    host_charlist = String.to_charlist(host)
+
+    case :gen_tcp.connect(host_charlist, port, [:binary, active: false]) do
+      {:ok, socket} ->
+        :gen_tcp.send(socket, RESPCommand.encode_array(["PING"]))
+
+      {:error, reason} ->
+        IO.puts("Failed to connect to master: #{inspect(reason)}")
     end
   end
 end

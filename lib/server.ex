@@ -14,16 +14,18 @@ defmodule Server do
   def start(_type, _args) do
     {opts, _args, _invalid} =
       OptionParser.parse(System.argv(),
-        switches: [port: :integer, dir: :string, dbfilename: :string]
+        switches: [port: :integer, dir: :string, dbfilename: :string, replicaof: :string]
       )
 
     port = Keyword.get(opts, :port, 6379)
     dir = Keyword.get(opts, :dir, "/tmp/redis-data")
+    role = if opts[:replicaof], do: "slave", else: "master"
+
     dbfilename = Keyword.get(opts, :dbfilename, "dump.rdb")
 
     children = [
       RDBStore,
-      {RDB, RDBConfig.new(dir, dbfilename)},
+      {RDB, RDBConfig.new(dir, dbfilename, role)},
       {Task.Supervisor, name: @task_supervisor},
       {Task,
        fn ->

@@ -36,4 +36,8 @@ defmodule RDB do
     key = String.to_atom(param)
     Agent.get(__MODULE__, fn config -> Map.get(config, key) end)
   end
+
+  def get_role() do
+    Agent.get(__MODULE__, fn config -> Map.get(config, :role) end)
+  end
 end

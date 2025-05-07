@@ -9,6 +9,4 @@ defmodule RESPCommand.ConfigGet do
   end
 
   def execute(_), do: "- error | wrong number of arguments for 'CONFIG GET'\r\n"
-
-
 end

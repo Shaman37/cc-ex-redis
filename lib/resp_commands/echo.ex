@@ -3,6 +3,6 @@ defmodule RESPCommand.Echo do
   Handles the ECHO command.
   """
 
-  def execute([arg]), do: "$#{byte_size(arg)}\r\n#{arg}\r\n"
+  def execute([arg]), do: RESPCommand.encode_string(arg)
   def execute(_), do: "- error | wrong number of arguments for 'ECHO' command\r\n"
 end

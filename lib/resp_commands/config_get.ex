@@ -4,16 +4,11 @@ defmodule RESPCommand.ConfigGet do
   def execute([param]) do
     case RDB.get_config_param(param) do
       nil -> "*0\r\n"
-      value -> encode_array([String.downcase(param), value])
+      value -> RESPCommand.encode_array([String.downcase(param), value])
     end
   end
 
   def execute(_), do: "- error | wrong number of arguments for 'CONFIG GET'\r\n"
 
-  defp encode_array(items) do
-    "*#{length(items)}\r\n" <>
-      Enum.map_join(items, "", fn item ->
-        "$#{byte_size(item)}\r\n#{item}\r\n"
-      end)
-  end
+
 end

@@ -4,7 +4,7 @@ defmodule RESPCommand.Get do
   def execute([key]) do
     case RDBStore.get(key) do
       nil -> "$-1\r\n"
-      value -> "$#{byte_size(value)}\r\n#{value}\r\n"
+      value -> RESPCommand.encode_string(value)
     end
   end
 

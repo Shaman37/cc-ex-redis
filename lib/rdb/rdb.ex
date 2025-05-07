@@ -40,4 +40,10 @@ defmodule RDB do
   def get_role() do
     Agent.get(__MODULE__, fn config -> Map.get(config, :role) end)
   end
+
+  def get_master_data(key) do
+    rdb_master_data = Agent.get(__MODULE__, fn config -> Map.get(config, :master_replication_data) end)
+
+    Map.get(rdb_master_data, key)
+  end
 end

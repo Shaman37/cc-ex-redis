@@ -56,6 +56,11 @@ defmodule RESPCommand do
         encode_string(item)
       end)
   end
+
+  def encode_bulk(lines) do
+    body = Enum.join(lines, "\r\n")
+    "$#{byte_size(body)}\r\n#{body}\r\n"
+  end
 end
 
 # null bulk string

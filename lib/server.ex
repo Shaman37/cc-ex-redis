@@ -4,7 +4,6 @@ defmodule Server do
   Uses Task.Supervisor to support multiple concurrent clients robustly.
   """
 
-  @port 6379
   @task_supervisor Server.TaskSupervisor
 
   use Application
@@ -14,8 +13,11 @@ defmodule Server do
   """
   def start(_type, _args) do
     {opts, _args, _invalid} =
-      OptionParser.parse(System.argv(), switches: [dir: :string, dbfilename: :string])
+      OptionParser.parse(System.argv(),
+        switches: [port: :integer, dir: :string, dbfilename: :string]
+      )
 
+    port = Keyword.get(opts, :port, 6379)
     dir = Keyword.get(opts, :dir, "/tmp/redis-data")
     dbfilename = Keyword.get(opts, :dbfilename, "dump.rdb")
 
@@ -26,7 +28,7 @@ defmodule Server do
       {Task,
        fn ->
          RDB.load()
-         listen()
+         listen(port)
        end}
     ]
 
@@ -35,8 +37,8 @@ defmodule Server do
 
   # Opens a TCP socket on the configured port and accepts incoming clients.
   # Each client is handled in its own supervised task.
-  defp listen() do
-    {:ok, socket} = :gen_tcp.listen(@port, [:binary, active: false, reuseaddr: true])
+  defp listen(port) do
+    {:ok, socket} = :gen_tcp.listen(port, [:binary, active: false, reuseaddr: true])
     loop_acceptor(socket)
   end
 

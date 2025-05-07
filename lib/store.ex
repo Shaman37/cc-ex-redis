@@ -41,4 +41,21 @@ defmodule Store do
         if now > expires_at, do: nil, else: value
     end
   end
+
+  def restore(data) do
+    Enum.each(data, fn {key, %{value: value, expiry: exp, expiry_type: type}} ->
+      expiry =
+        case exp do
+          :infinity -> :infinity
+          ts when type == :s -> ts * 1000
+          ts when type == :ms -> ts
+        end
+
+      Agent.update(__MODULE__, fn store -> Map.put(store, key, {value, expiry}) end)
+    end)
+  end
+
+  def keys() do
+    Agent.get(__MODULE__, fn store -> Map.keys(store) end)
+  end
 end

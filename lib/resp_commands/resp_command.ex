@@ -2,7 +2,7 @@ defmodule RESPCommand do
   @moduledoc """
   Represents a parsed Redis command and dispatches execution.
   """
-  alias RESPCommand.{Ping, Echo, Get, Set, ConfigGet}
+  alias RESPCommand.{Ping, Echo, Get, Set, ConfigGet, Keys}
 
   @enforce_keys [:name]
   defstruct [:name, :arguments]
@@ -37,6 +37,8 @@ defmodule RESPCommand do
   def execute(%__MODULE__{name: "GET", arguments: args}), do: Get.execute(args)
   def execute(%__MODULE__{name: "SET", arguments: args}), do: Set.execute(args)
   def execute(%__MODULE__{name: "CONFIG", arguments: ["GET", args]}), do: ConfigGet.execute([args])
+  def execute(%__MODULE__{name: "KEYS", arguments: args}), do: Keys.execute(args)
+
   def execute(%__MODULE__{name: name}), do: "- error | unknown command '#{String.downcase(name)}'\r\n"
 end
       # null bulk string

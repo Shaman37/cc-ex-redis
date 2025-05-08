@@ -99,6 +99,9 @@ defmodule Server do
         :gen_tcp.send(socket, RESPCommand.encode_array(["REPLCONF", "capa", "psync2"]))
         {:ok, _} = :gen_tcp.recv(socket, 0)
 
+        :gen_tcp.send(socket, RESPCommand.encode_array(["PSYNC", "?", "-1"]))
+        {:ok, _} = :gen_tcp.recv(socket, 0)
+
       {:error, reason} ->
         IO.puts("Failed to connect to master: #{inspect(reason)}")
     end

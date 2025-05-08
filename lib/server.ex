@@ -37,8 +37,8 @@ defmodule Server do
     {:ok, pid} = Supervisor.start_link(children, strategy: :one_for_one)
 
     if role == "slave" do
-      [host, port] = Keyword.get(opts, :replicaof, "") |> String.split()
-      Task.start(fn -> connect_to_master(host, String.to_integer(port)) end)
+      [host, master_port] = Keyword.get(opts, :replicaof, "") |> String.split()
+      Task.start(fn -> connect_to_master(host, String.to_integer(master_port), port) end)
     end
 
     {:ok, pid}
@@ -80,13 +80,24 @@ defmodule Server do
     end
   end
 
-  defp connect_to_master(host, port) do
+  defp connect_to_master(host, master_port, port) do
     # Convert host/port to charlist for :gen_tcp.connect
     host_charlist = String.to_charlist(host)
 
-    case :gen_tcp.connect(host_charlist, port, [:binary, active: false]) do
+    case :gen_tcp.connect(host_charlist, master_port, [:binary, active: false]) do
       {:ok, socket} ->
         :gen_tcp.send(socket, RESPCommand.encode_array(["PING"]))
+        {:ok, _} = :gen_tcp.recv(socket, 0)
+
+        :gen_tcp.send(
+          socket,
+          RESPCommand.encode_array(["REPLCONF", "listening-port", "#{port}"])
+        )
+
+        {:ok, _} = :gen_tcp.recv(socket, 0)
+
+        :gen_tcp.send(socket, RESPCommand.encode_array(["REPLCONF", "capa", "psync2"]))
+        {:ok, _} = :gen_tcp.recv(socket, 0)
 
       {:error, reason} ->
         IO.puts("Failed to connect to master: #{inspect(reason)}")

@@ -1,4 +1,4 @@
-defmodule RDBParser do
+defmodule Redis.RDB.Parser do
   @moduledoc """
   A Redis RDB v11 binary parser that supports a single database.
 
@@ -19,7 +19,7 @@ defmodule RDBParser do
     - `:data` — parsed keys and values, with optional expiries
     - `:checksum` — final 8-byte CRC64 checksum as a hex string
   """
-  def parse_db(file_path) do
+  def parse_file(file_path) do
     result = %{}
 
     if File.exists?(file_path) do

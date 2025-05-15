@@ -1,5 +1,7 @@
-defmodule RDB do
+defmodule Redis.RDB do
   @moduledoc "Stores configuration values like dir and dbfilename."
+  alias Redis.RDB
+
   use Agent
 
   @doc """
@@ -10,40 +12,40 @@ defmodule RDB do
   end
 
   def load() do
-    file = Agent.get(__MODULE__, fn config -> RDBConfig.get_db_path(config) end)
-    rdb_data = RDBParser.parse_db(file)
+    file = Agent.get(__MODULE__, fn config -> RDB.PersistanceConfig.get_db_path(config) end)
+    rdb_data = RDB.Parser.parse_file(file)
 
-    redis_version = Map.get(rdb_data, :redis_version, "0011")
+    if map_size(rdb_data) > 0 do
+      log_result(rdb_data)
+      Redis.Store.restore(rdb_data[:data])
+    end
+  end
+
+  def get_contents() do
+    empty_rdb64 =
+      "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog=="
+
+    {:ok, binary} = Base.decode64(empty_rdb64)
+
+    binary
+  end
+
+  def get_config() do
+    Agent.get(__MODULE__, fn config -> config end)
+  end
+
+  defp log_result(data) do
+    redis_version = Map.get(data, :redis_version, "0011")
     IO.puts("Redis RDB Version: #{redis_version}")
 
-    metadata = Map.get(rdb_data, :metadata, %{})
+    metadata = Map.get(data, :metadata, %{})
     IO.puts("Metadata:")
 
-    IO.puts("Restored #{map_size(rdb_data[:data] || %{})} keys into the RDBStore.")
-    IO.puts("RDB Checksum: #{Map.get(rdb_data, :checksum, "N/A")}")
+    IO.puts("Restored #{map_size(data[:data] || %{})} keys into the RDBStore.")
+    IO.puts("RDB Checksum: #{Map.get(data, :checksum, "N/A")}")
 
     Enum.each(metadata, fn {key, value} ->
       IO.puts("  #{key}: #{value}")
     end)
-
-    case Map.get(rdb_data, :data) do
-      nil -> IO.puts("No data section found in RDB file.")
-      data -> RDBStore.restore(data)
-    end
-  end
-
-  def get_config_param(param) do
-    key = String.to_atom(param)
-    Agent.get(__MODULE__, fn config -> Map.get(config, key) end)
-  end
-
-  def get_role() do
-    Agent.get(__MODULE__, fn config -> Map.get(config, :role) end)
-  end
-
-  def get_master_data(key) do
-    rdb_master_data = Agent.get(__MODULE__, fn config -> Map.get(config, :master_replication_data) end)
-
-    Map.get(rdb_master_data, key)
   end
 end

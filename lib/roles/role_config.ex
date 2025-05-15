@@ -36,4 +36,11 @@ defmodule Redis.Roles.RoleConfig do
 
     Map.get(role_data, key)
   end
+
+  def update_data(data_fun) do
+    Agent.update(__MODULE__, fn config ->
+      %Roles.RoleConfig{config | data: data_fun.(config.data)}
+    end)
+  end
+
 end

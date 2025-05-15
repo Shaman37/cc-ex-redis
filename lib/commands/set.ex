@@ -1,10 +1,17 @@
 defmodule Redis.Command.Set do
   @moduledoc "Handles the SET command."
-  alias Redis.Store
-  alias Redis.Utility.ResponseEncoder
+  alias Redis.{Store, Roles, Utility.ResponseEncoder}
 
   def execute([key, value], socket) do
     Store.set(key, value)
+
+    role = Roles.RoleConfig.get_role()
+
+    if role == "master" do
+      command = ResponseEncoder.encode_array(["SET", key, value])
+      Roles.Master.propagate_command(command)
+    end
+
     response = ResponseEncoder.encode_ok()
     :gen_tcp.send(socket, response)
   end
@@ -14,6 +21,14 @@ defmodule Redis.Command.Set do
       case {String.upcase(px), Integer.parse(px_value)} do
         {"PX", {expiry, ""}} ->
           Store.set(key, value, expiry)
+
+          role = Roles.RoleConfig.get_role()
+
+          if role == "master" do
+            command = ResponseEncoder.encode_array(["SET", key, value, px, px_value])
+            Roles.Master.propagate_command(command)
+          end
+
           ResponseEncoder.encode_ok()
 
         {"PX", _} ->
